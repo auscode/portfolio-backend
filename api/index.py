@@ -318,87 +318,179 @@ def carrer():
         return jsonify({'message': 'Application submitted successfully'}), 201
 
 
-@app.route('/api/dishCreateProcess', methods=['POST', 'GET'])
+@app.route('/api/dishCreateProcess', methods=['POST'])
 def dishCreateProcess():
     data = request.get_json()
-    dishN = data['dish_name']
-    people = data['people']
-    Dish_detail = db.Dish.find_one({'dish_name': dishN})
-    # already_person = #Dish_detail['person']
-    already_person = 1
-    if Dish_detail is None:
-        return jsonify({'Message': "Dish is not Found"}), 404
+    dish_name = data.get('dish_name')
+    people = data.get('people')
+
+    if not dish_name or people is None:
+        return jsonify({'Message': "Invalid input"}), 400
+
+    dish_detail = db.Dish.find_one({'dish_name': dish_name})
+
+    if dish_detail is None:
+        return jsonify({'Message': "Dish not found"}), 404
+
+    already_person = dish_detail.get('people', 1)  # Default to 1 if not found
+
+    # Use correct key for ingredients
+    ingredients = dish_detail.get('ingredients', [])
+    kitchen_equipments = dish_detail.get('kitchen_equipments', '')
+
+    # Ensure kitchen_equipments is a string
+    if isinstance(kitchen_equipments, list):
+        kitchen_equipments_str = ','.join(kitchen_equipments)  # Join list into a comma-separated string
     else:
-        Inde = []
-        for it in Dish_detail['indegrients']:
-            temp = it['name'] + " " + str((int(it['quantity']) // (already_person)) * people) + "-" + it['unit']
-            Inde.append(temp)
-            # Inde.append(it['name'])
-            # Inde.append(str(int(it['quantity'])//(already_person))*people) +" " + it['unit'])
-        return jsonify({"Kitchen_equi": Dish_detail['kitchen_equipments'].split(","), "Indegrients": Inde}), 201
+        kitchen_equipments_str = kitchen_equipments
 
+    inde = []
+    for ingredient in ingredients:
+        quantity = ingredient.get('quantity')
+        if isinstance(quantity, list):
+            quantity = sum(int(q) for q in quantity)  # Convert each item in the list to int and sum them up
+        try:
+            quantity = int(quantity)  # Ensure quantity is an integer
+        except (TypeError, ValueError):
+            return jsonify({'Message': "Invalid quantity format"}), 400
 
-@app.route('/api/luxuryDishes/', methods=['GET', 'POST'])
+        temp = f"{ingredient['name']} {quantity // already_person * people} {ingredient['unit']}"
+        inde.append(temp)
+
+    return jsonify({
+        "Kitchen_equipments": kitchen_equipments_str.split(","),  # Split the string into a list
+        "Ingredients": inde
+    }), 200
+
+@app.route('/api/luxuryDishes/', methods=['POST'])
 def luxuryDishes():
     data = request.get_json()
-    dishN = data['dish_name']
-    people = data['people']
-    Dish_detail = db.Dish.find_one({'dish_name': dishN})
-    # already_person = #Dish_detail['person']
-    already_person = 1
-    if Dish_detail is None:
-        return jsonify({'Message': "Dish is not Found"}), 404
+    dish_name = data.get('dish_name')
+    people = data.get('people')
+    if not dish_name or people is None:
+        return jsonify({'Message': "Invalid input"}), 400
+    dish_detail = db.Dish.find_one({'dish_name': dish_name})
+    if dish_detail is None:
+        return jsonify({'Message': "Dish not found"}), 404
+    already_person = dish_detail.get('people', 1)  
+    ingredients = dish_detail.get('ingredients', [])
+    kitchen_equipments = dish_detail.get('kitchen_equipments', '')
+
+    if isinstance(kitchen_equipments, list):
+        kitchen_equipments_str = ','.join(kitchen_equipments)
     else:
-        Inde = []
-        for it in Dish_detail['indegrients']:
-            temp = it['name'] + " " + str((int(it['quantity']) // (already_person)) * people) + "-" + it['unit']
-            Inde.append(temp)
-            # Inde.append(it['name'])
-            # Inde.append(str(int(it['quantity'])//(already_person))*people) +" " + it['unit'])
-        return jsonify({"Kitchen_equi": Dish_detail['kitchen_equipments'].split(","), "Indegrients": Inde}), 201
+        kitchen_equipments_str = kitchen_equipments
+
+    inde = []
+    for ingredient in ingredients:
+        quantity = ingredient.get('quantity')
+        if isinstance(quantity, list):
+            quantity = sum(int(q) for q in quantity)
+        try:
+            quantity = int(quantity)  
+        except (TypeError, ValueError):
+            return jsonify({'Message': "Invalid quantity format"}), 400
+
+        temp = f"{ingredient['name']} {quantity // already_person * people} {ingredient['unit']}"
+        inde.append(temp)
+
+    return jsonify({
+        "Kitchen_equipments": kitchen_equipments_str.split(","),
+        "Ingredients": inde
+    }), 200
 
 
-@app.route('/api/quickDishes', methods=['POST', 'GET'])
+
+@app.route('/api/quickDishes', methods=['POST'])
 def quickDishes():
     data = request.get_json()
-    dishN = data['dish_name']
-    people = data['people']
-    Dish_detail = db.Dish.find_one({'dish_name': dishN})
-    # already_person = #Dish_detail['person']
-    already_person = 1
-    if Dish_detail is None:
-        return jsonify({'Message': "Dish is not Found"}), 404
-    else:
-        Inde = []
-        for it in Dish_detail['indegrients']:
-            temp = it['name'] + " " + str((int(it['quantity']) // (already_person)) * people) + "-" + it['unit']
-            Inde.append(temp)
-            # Inde.append(it['name'])
-            # Inde.append(str(int(it['quantity'])//(already_person))*people) +" " + it['unit'])
-        return jsonify({"Kitchen_equi": Dish_detail['kitchen_equipments'].split(","), "Indegrients": Inde}), 201
+    dish_name = data.get('dish_name')
+    people = data.get('people')
 
+    if not dish_name or people is None:
+        return jsonify({'Message': "Invalid input"}), 400
 
-@app.route('/api/healtyDishes', methods=['POST', 'GET'])
-def healtyDishes():
+    dish_detail = db.Dish.find_one({'dish_name': dish_name})
+
+    if dish_detail is None:
+        return jsonify({'Message': "Dish not found"}), 404
+
+    already_person = dish_detail.get('people', 1)  # Adjust based on actual logic
+
+    # Use correct key for ingredients
+    ingredients = dish_detail.get('ingredients', [])
+    if not ingredients:
+        return jsonify({'Message': "Ingredients not found for the dish"}), 404
+
+    inde = []
+    for ingredient in ingredients:
+        quantity = ingredient.get('quantity')
+        try:
+            # Handle different types of quantity
+            if isinstance(quantity, list):
+                quantity = sum(int(q) for q in quantity if q.isdigit())  # Sum up quantities in the list
+            else:
+                quantity = int(quantity)  # Convert to integer
+        except (TypeError, ValueError):
+            # Debug print statements
+            print(f"Invalid quantity value: {quantity}, Type: {type(quantity)}")
+            return jsonify({'Message': "Invalid quantity format"}), 400
+
+        temp = f"{ingredient.get('name', 'Unknown')} {quantity // already_person * people} {ingredient.get('unit', 'unit')}"
+        inde.append(temp)
+
+    kitchen_equipments = dish_detail.get('kitchen_equipments', '')
+    if isinstance(kitchen_equipments, list):
+        kitchen_equipments = ','.join(kitchen_equipments)  # Join list into a comma-separated string
+
+    return jsonify({
+        "Kitchen_equipments": kitchen_equipments.split(","),
+        "Ingredients": inde
+    }), 200
+
+@app.route('/api/healthyDishes', methods=['POST'])
+def healthyDishes():
     data = request.get_json()
-    dishN = data['dish_name']
-    people = data['people']
-    Dish_detail = db.Dish.find_one({'dish_name': dishN})
-    # already_person = #Dish_detail['person']
-    already_person = 1
-    if Dish_detail is None:
-        return jsonify({'Message': "Dish is not Found"}), 404
-    else:
-        Inde = []
-        for it in Dish_detail['indegrients']:
-            temp = it['name'] + " " + str((int(it['quantity']) // (already_person)) * people) + "-" + it['unit']
-            Inde.append(temp)
-            # Inde.append(it['name'])
-            # Inde.append(str(int(it['quantity'])//(already_person))*people) +" " + it['unit'])
-        return jsonify({"Kitchen_equi": Dish_detail['kitchen_equipments'].split(","), "Indegrients": Inde}), 201
+    dish_name = data.get('dish_name')
+    people = data.get('people')
 
+    if not dish_name or people is None:
+        return jsonify({'Message': "Invalid input"}), 400
 
-@app.route('/userDetials', methods=['GET', 'POST'])
+    dish_detail = db.Dish.find_one({'dish_name': dish_name})
+
+    if dish_detail is None:
+        return jsonify({'Message': "Dish not found"}), 404
+
+    already_person = dish_detail.get('people', 1)
+    ingredients = dish_detail.get('ingredients', [])
+    kitchen_equipments = dish_detail.get('kitchen_equipments', '')
+
+    if not ingredients:
+        return jsonify({'Message': "Ingredients not found for the dish"}), 404
+
+    inde = []
+    for ingredient in ingredients:
+        quantity = ingredient.get('quantity')
+        if isinstance(quantity, list):
+            quantity = sum(int(q) for q in quantity if isinstance(q, (int, str)) and str(q).isdigit())
+        try:
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            return jsonify({'Message': "Invalid quantity format"}), 400
+
+        temp = f"{ingredient.get('name', 'Unknown')} {quantity // already_person * people} {ingredient.get('unit', 'unit')}"
+        inde.append(temp)
+
+    if isinstance(kitchen_equipments, list):
+        kitchen_equipments = ','.join(kitchen_equipments)
+
+    return jsonify({
+        "Kitchen_equipments": kitchen_equipments.split(","),
+        "Ingredients": inde
+    }), 200
+
+@app.route('/userDetails', methods=['GET', 'POST'])
 @jwt_required()
 def userDetials():
     temp = get_jwt_identity()
@@ -429,6 +521,7 @@ def create_id():
 
 
 @app.route('/api/saveMenu', methods=['GET', 'POST'])
+@jwt_required()
 def saveMenu():
     user_email = get_jwt_identity()
     user = db.User.find_one({'email': user_email})
@@ -451,7 +544,7 @@ def saveMenu():
     cuisine = data['cuisine']
     desserts = data['desserts']
     appetizers = data['appetizers']
-
+    reminder_datetime = datetime.fromisoformat(reminder)
     if meal == 'dinner':
         db.Menu.insert_one({
             'meal': meal,
@@ -487,7 +580,7 @@ def saveMenu():
             'cuisine': cuisine
         })
 
-    reminder_time = reminder - timedelta(minutes=10)
+    reminder_time = reminder_datetime - timedelta(minutes=10)
     scheduler.add_job(
         id='reminder',
         func=send_reminder,
